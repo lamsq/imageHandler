@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image processing app</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <style>
+        #loading {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        #imageForm{
+            text-align: center;
+            margin: 0rem 0rem 1rem 0rem;
+            padding: 1rem;
+            background-color:rgb(168, 141, 184);
+        }
+
+        #imageForm input, #imageForm button{
+            margin: 0 0.5rem;
+            font-size: 1rem;
+            border-radius: 4px;
+        }
+
+        body {
+            width: 80%;
+            margin: auto;
+            background-color:rgb(235, 235, 235);
+        }
+
+        button{
+            background-color:rgb(140, 195, 155);
+        }
+
+        #imageContainer {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            align-items: center;
+            gap: 1rem;
+            
+        }
+
+        #imageContainer img {
+            margin: 0.5rem;
+        }    
+    </style>
+
+</head>
+<body>
+    <form id="imageForm">
+        <input type="text" name="url" placeholder="Enter URL with images" required>
+        <input type="number" name="minWidth" placeholder="Min required width" required>
+        <input type="number" name="minHeight" placeholder="Min required height" required>
+        <input type="text" name="text" placeholder="Text to add to images">
+        <button type="submit">Submit</button>
+    </form>
+
+    <div id="loading">Processing images...</div>
+
+    <div id="imageContainer">
+        {% for image in images %}
+            <img src="{{ image }}" width="200" height="200">
+        {% endfor %}
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('#imageForm').submit(function(e) {
+                e.preventDefault();
+                $('#loading').show();
+                $('#imageContainer').empty();
+                $.ajax({
+                    url: '{{ path('image_upload') }}',
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    timeout: 600000, //increased timeout for url with many pics
+                    success: function(response) {
+                        $('#loading').text("Images fit the requirements: " + response.processedImages + " out of " + response.totalImages);
+                        if (response.images && response.images.length > 0) {
+                            response.images.forEach(function(image) {
+                                $('#imageContainer').append('<img src="' + image + '" width="200" height="200">');
+                            });
+                        } else {
+                            alert('No images found;');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        $('#loading').hide();
+                        if (status === "timeout") {
+                            alert("The request timed out. Try again or use another URL;");
+                        } else {
+                            alert('Error: ' + (xhr.responseJSON ? xhr.responseJSON.error : 'Unknown error occurred'));
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
